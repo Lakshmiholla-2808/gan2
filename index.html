@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Open edX Deep Technical & Content Audit</title>
+<style>
+:root{--bg:#f5f7fb;--card:#fff;--text:#172033;--muted:#667085;--line:#dfe4ec;--blue:#315efb;--blue2:#eef2ff;--red:#b42318;--orange:#b54708;--green:#027a48;--shadow:0 8px 28px rgba(16,24,40,.07)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial}
+header{background:#111827;color:#fff;padding:22px 26px;position:sticky;top:0;z-index:20}.head{max-width:1450px;margin:auto;display:flex;justify-content:space-between;gap:20px;align-items:center}
+h1{font-size:23px;margin:0}.sub{color:#cbd5e1;margin-top:3px}.wrap{max-width:1450px;margin:20px auto;padding:0 18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:18px;margin-bottom:17px}
+.urlrow{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:9px 0}.urlbox{display:flex;gap:8px}.urlbox input{flex:1}
+input,select,textarea{border:1px solid var(--line);border-radius:9px;padding:10px;width:100%;background:#fff;color:var(--text)}button{border:1px solid var(--line);border-radius:9px;padding:9px 13px;background:#fff;cursor:pointer;font-weight:650;color:var(--text)}button.primary{background:var(--blue);color:#fff;border-color:var(--blue)}button:disabled{opacity:.5;cursor:not-allowed}
+.actions{display:flex;gap:8px;flex-wrap:wrap}.layout{display:grid;grid-template-columns:250px 1fr;gap:16px}nav button{display:block;width:100%;text-align:left;border:0;margin:3px 0}nav button.active{background:var(--blue2);color:var(--blue)}
+.section{display:none}.section.active{display:block}.notice{padding:12px;border:1px solid var(--line);background:#f8fafc;border-radius:10px;margin:9px 0}.warn{background:#fff8e7;border-color:#f1d39a}.ok{background:#ecfdf3;border-color:#a6e4c1}
+.stats{display:grid;grid-template-columns:repeat(6,1fr);gap:9px}.stat{border:1px solid var(--line);border-radius:10px;padding:11px}.stat b{font-size:20px;display:block}.stat span{color:var(--muted);font-size:12px}
+.table{overflow:auto;border:1px solid var(--line);border-radius:10px}table{border-collapse:collapse;width:100%;min-width:900px}th,td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{font-size:12px;background:#f8fafc;white-space:nowrap}tr:last-child td{border-bottom:0}
+.badge{display:inline-block;padding:3px 8px;border-radius:999px;font-size:11px;font-weight:700;background:#eef2f6}.critical{background:#fee4e2;color:#912018}.high{background:#ffead5;color:#93370d}.medium{background:#fef0c7;color:#854d0e}.low{background:#dcfae6;color:#05603a}
+.muted{color:var(--muted)}.empty{text-align:center;padding:28px;color:var(--muted)}.url{word-break:break-all}.progress{height:8px;background:#e5e7eb;border-radius:9px;overflow:hidden}.progress>i{display:block;height:100%;background:var(--blue);width:0}.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.full{grid-column:1/-1}
+pre{white-space:pre-wrap;max-height:170px;overflow:auto;background:#111827;color:#e5e7eb;border-radius:8px;padding:10px;font-size:12px}.right{text-align:right}
+@media(max-width:900px){.layout{grid-template-columns:1fr}.urlrow,.formgrid{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<header><div class="head"><div><h1>Open edX Deep Technical & Content Audit</h1><div class="sub">Audit up to 5 Open edX asset/course URLs — no file uploads required</div></div><div class="actions"><button id="jsonBtn">Export JSON</button><button id="csvBtn">Export CSV</button></div></div></header>
+
+<div class="wrap">
+<div class="card">
+<h2 style="margin-top:0">Open edX Asset Links</h2>
+<p class="muted">Enter up to <b>5 public Open edX courseware, XBlock, video, text, or other asset URLs</b>. The app attempts to retrieve each URL directly from the browser, extracts accessible page text, and builds an evidence-based audit. Open edX supports public course content and individual XBlock rendering when the installation exposes those pages publicly. citeturn0search2turn0search5</p>
+<div id="urls"></div>
+<div class="actions"><button class="primary" id="auditBtn">Inspect & Audit Links</button><button id="clearBtn">Clear</button></div>
+<div class="notice warn"><b>Important:</b> GitHub Pages is a static site. This build does not bypass login, enrollment, CORS, authentication, or private Open edX content. If a URL cannot be fetched from the browser, it is recorded as <b>Needs Verification</b> rather than pretending that the asset was inspected.</div>
+<div id="progressBox" style="display:none;margin-top:12px"><div class="progress"><i id="bar"></i></div><div id="progressText" class="small muted"></div></div>
+</div>
+
+<div class="layout">
+<aside>
+<div class="card"><nav id="nav">
+<button class="active" data-tab="overview">1. Overview</button>
+<button data-tab="sources">2. Source Inventory</button>
+<button data-tab="coverage">3. Verification Coverage</button>
+<button data-tab="issues">4. Technical Issues</button>
+<button data-tab="gaps">5. Content Gaps</button>
+<button data-tab="cross">6. Cross-Source Consistency</button>
+<button data-tab="manual">7. Manual SME Review</button>
+<button data-tab="master">8. Master Issue Log</button>
+</nav></div>
+<div class="card muted small"><b>Audit principle</b><br>Evidence → finding → description → suggestion → severity → fix type → priority. Unsupported claims are flagged for verification rather than invented.</div>
+</aside>
+
+<main>
+<section id="overview" class="section active">
+<div class="card"><h2>Overall Assessment</h2><div class="stats" id="stats"></div><div id="summary" style="margin-top:12px"></div></div>
+<div class="card"><h2>Key Findings</h2><div id="key" class="empty">Enter Open edX URLs and run the audit.</div></div>
+<div class="card"><h2>Critical Fixes / Quick Wins</h2><div id="fixes" class="empty">No findings yet.</div></div>
+</section>
+
+<section id="sources" class="section"><div class="card"><h2>Source Inventory</h2><div id="sourceTable" class="empty">No URLs inspected.</div></div></section>
+<section id="coverage" class="section"><div class="card"><h2>Verification Coverage</h2><div id="coverageTable" class="empty">No URLs inspected.</div></div></section>
+<section id="issues" class="section"><div class="card"><h2>Detected Issues</h2><div id="issueTable" class="empty">No issues yet.</div></div></section>
+<section id="gaps" class="section"><div class="card"><h2>Technical Content Gap Analysis</h2><div id="gapTable" class="empty">No gap candidates yet.</div></div></section>
+<section id="cross" class="section"><div class="card"><h2>Cross-Source Consistency</h2><div id="crossTable" class="empty">No cross-source evidence yet.</div></div></section>
+
+<section id="manual" class="section"><div class="card"><h2>Manual SME Review</h2><p class="muted">Use this for things that require visual/audio/domain judgement, such as narration accuracy, pronunciation, screenshots, diagrams, or technical claims that cannot be established from page text.</p>
+<div class="formgrid">
+<label>Source URL<input id="mSource"></label><label>Timestamp / Location<input id="mTime" placeholder="e.g. 00:02:07 or page section"></label>
+<label>Issue Type<select id="mType"><option>Technical Error</option><option>Technical Inaccuracy</option><option>Technical Gap</option><option>Terminology</option><option>Outdated Content</option><option>Code/Command Issue</option><option>Spelling</option><option>Grammar</option><option>Inconsistency</option><option>Learner Risk</option><option>Enhancement</option><option>Needs Verification</option></select></label>
+<label>Severity<select id="mSev"><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select></label>
+<label>Fix Type<select id="mFix"><option>Quick Fix</option><option>Content Update</option><option>Re-record Required</option><option>SME Verification</option></select></label>
+<label>Priority<select id="mPri"><option>High</option><option>Medium</option><option>Low</option></select></label>
+<label class="full">Issue description<textarea id="mFinding" rows="3"></textarea></label>
+<label class="full">Suggestion / correction<textarea id="mCorrection" rows="3"></textarea></label>
+<label class="full">Evidence<textarea id="mEvidence" rows="3"></textarea></label>
+</div><div class="right"><button class="primary" id="add">Add to Master Log</button></div>
+</div></section>
+
+<section id="master" class="section"><div class="card"><h2>Final Master Issue Log</h2><div id="masterTable" class="empty">No issues yet.</div></div></section>
+</main>
+</div>
+</div>
+
+<script>
+const S={sources:[],issues:[],gaps:[],cross:[]};
+const $=x=>document.getElementById(x);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const badge=s=>`<span class="badge ${String(s).toLowerCase()}">${esc(s)}</span>`;
+const issueTypes=['Technical Error','Technical Inaccuracy','Technical Gap','Terminology','Outdated Content','Code/Command Issue','Spelling','Grammar','Inconsistency','Learner Risk','Enhancement','Needs Verification'];
+
+function initUrls(){
+ $('urls').innerHTML=Array.from({length:5},(_,i)=>`<div class="urlbox"><input id="u${i}" type="url" placeholder="Asset URL ${i+1} — https://..."></div>`).join('');
+}
+initUrls();
+
+document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));$(b.dataset.tab).classList.add('active');document.querySelectorAll('#nav button').forEach(x=>x.classList.remove('active'));b.classList.add('active')});
+$('clearBtn').onclick=()=>{initUrls();S.sources=[];S.issues=[];S.gaps=[];S.cross=[];render()};
+$('auditBtn').onclick=inspectAll;
+
+async function inspectAll(){
+ const urls=[0,1,2,3,4].map(i=>$('u'+i).value.trim()).filter(Boolean);
+ if(!urls.length){alert('Enter at least one Open edX URL.');return}
+ if(urls.length>5){alert('Maximum 5 URLs.');return}
+ S.sources=[];S.issues=[];S.gaps=[];S.cross=[];
+ $('progressBox').style.display='block';
+ for(let i=0;i<urls.length;i++){
+   $('progressText').textContent=`Inspecting ${i+1} of ${urls.length}…`;
+   $('bar').style.width=`${Math.round(i/urls.length*100)}%`;
+   S.sources.push(await inspectUrl(urls[i]));
+ }
+ $('bar').style.width='100%';$('progressText').textContent='Inspection complete.';
+ analyze();render();
+}
+async function inspectUrl(url){
+ const r={url,status:'',http:'',title:'',text:'',html:'',kind:classify(url),fetched:false,bytes:0,notes:[]};
+ try{
+   const res=await fetch(url,{method:'GET',mode:'cors',redirect:'follow'});
+   r.http=res.status+' '+res.statusText;
+   const ct=res.headers.get('content-type')||'';
+   r.html=await res.text();r.bytes=r.html.length;r.fetched=res.ok;
+   if(!res.ok)r.notes.push('HTTP response was not successful.');
+   r.title=(r.html.match(/<title[^>]*>([\\s\\S]*?)<\\/title>/i)||[])[1]||'';
+   r.title=strip(r.title);
+   r.text=htmlToText(r.html);
+   r.status=res.ok?'Fetched':'Fetch failed';
+   if(!r.text.trim())r.notes.push('The response contained little or no readable text.');
+ }catch(e){
+   r.status='Not accessible from browser';r.notes.push('Browser fetch failed. This can occur because the Open edX page requires authentication, enrollment, or does not permit cross-origin requests (CORS).');
+   r.error=e.message;
+ }
+ return r;
+}
+function classify(u){
+ const x=u.toLowerCase();
+ if(x.includes('/xblock/'))return 'XBlock';
+ if(x.includes('/courseware/'))return 'Courseware';
+ if(x.includes('/video/'))return 'Video';
+ if(x.includes('/asset'))return 'Asset';
+ if(x.includes('/courses/'))return 'Course page';
+ return 'Open edX URL';
+}
+function strip(x){return x.replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/&amp;/g,'&').replace(/&#39;/g,"'").replace(/&quot;/g,'"').replace(/\\s+/g,' ').trim()}
+function htmlToText(h){
+ const doc=new DOMParser().parseFromString(h,'text/html');
+ doc.querySelectorAll('script,style,noscript,svg').forEach(x=>x.remove());
+ return (doc.body?.innerText||doc.documentElement?.innerText||'').replace(/\\s+/g,' ').trim();
+}
+function add(o){S.issues.push({...o,id:crypto.randomUUID(),source:'Automated URL inspection'})}
+function snippet(t,term){let i=t.toLowerCase().indexOf(term.toLowerCase());return i<0?'':t.slice(Math.max(0,i-100),i+term.length+180)}
+function analyze(){
+ for(const s of S.sources){
+   if(!s.fetched){
+     add({source:s.url,time:'—',type:'Needs Verification',finding:'The Open edX URL could not be inspected directly by the browser.',correction:'Verify that the page is public and browser-accessible. If it requires login/enrollment or blocks CORS, inspect it in the Open edX environment or provide an accessible XBlock/courseware URL.',severity:'High',fix:'SME Verification',priority:'High',evidence:s.error||s.notes.join(' ')});
+     continue;
+   }
+   const t=s.text, low=t.toLowerCase();
+   if(t.length<100)add({source:s.url,time:'—',type:'Needs Verification',finding:'The fetched page contains very little readable text, so a deep content audit cannot be claimed.',correction:'Open the asset in learner view and confirm whether the actual content is loaded dynamically or behind authentication.',severity:'Medium',fix:'SME Verification',priority:'High',evidence:t});
+   // Technical terminology / capitalization
+   const terms=[['javascript','JavaScript'],['typescript','TypeScript'],['github','GitHub'],['json','JSON'],['api','API'],['html','HTML'],['css','CSS'],['sql','SQL'],['pytorch','PyTorch'],['tensorflow','TensorFlow'],['roberta','RoBERTa'],['tf-idf','TF-IDF']];
+   for(const [w,correct] of terms){
+     const re=new RegExp('\\\\b'+w+'\\\\b');
+     if(re.test(t)&&new RegExp('\\\\b'+correct+'\\\\b').test(t)===false && w!==w.toUpperCase())add({source:s.url,time:'—',type:'Terminology',finding:`The page contains “${w}”, which may need the technically standard form “${correct}”.`,correction:`Use “${correct}” when referring to the named technology or standard; confirm generic context before editing.`,severity:'Low',fix:'Quick Fix',priority:'Low',evidence:snippet(t,w)});
+   }
+   const miss=[['recieve','receive'],['seperate','separate'],['occured','occurred'],['dependancy','dependency'],['enviroment','environment'],['definately','definitely'],['paramter','parameter'],['langauge','language'],['compatability','compatibility']];
+   for(const [w,c] of miss)if(low.includes(w))add({source:s.url,time:'—',type:'Spelling',finding:`Possible misspelling “${w}” detected.`,correction:`Replace with “${c}” after confirming the intended word.`,severity:'Low',fix:'Quick Fix',priority:'Low',evidence:snippet(t,w)});
+   const abs=[...t.matchAll(/\\b(always|never|all|none|guaranteed|100%)\\b/gi)][0];
+   if(abs)add({source:s.url,time:'—',type:'Technical Inaccuracy',finding:`Absolute wording “${abs[0]}” was detected. This is a review candidate, not an automatic error.`,correction:'Check the surrounding technical claim and qualify it if exceptions, versions, configurations, or deployment conditions exist.',severity:'Medium',fix:'SME Verification',priority:'Medium',evidence:snippet(t,abs[0])});
+   if(/\\bTODO\\b|\\bTBD\\b|\\bTK\\b/i.test(t))add({source:s.url,time:'—',type:'Enhancement',finding:'A placeholder appears in the accessible page text.',correction:'Resolve or remove the placeholder before publication.',severity:'Low',fix:'Quick Fix',priority:'Medium',evidence:snippet(t,'TODO')||snippet(t,'TBD')});
+   // Code/commands visible in page
+   const code=Array.from(new DOMParser().parseFromString(s.html,'text/html').querySelectorAll('pre,code')).map(x=>x.textContent.trim()).filter(Boolean);
+   if(code.length)add({source:s.url,time:'—',type:'Code/Command Issue',finding:`${code.length} code/command block(s) were detected. Static inspection cannot establish execution correctness.`,correction:'Review syntax, imports, parameters, versions, expected output, security implications, and execute examples where applicable.',severity:'Medium',fix:'SME Verification',priority:'Medium',evidence:code.slice(0,2).join('\\n---\\n')});
+   // Video/transcript indicators
+   if(s.kind==='Video'||/video|transcript|subtitle|caption/i.test(t)){
+     if(!/transcript|subtitle|caption/i.test(t))add({source:s.url,time:'—',type:'Technical Gap',finding:'The page appears to contain video-related content, but an accessible transcript/subtitle text was not clearly detected.',correction:'Review the video narration and subtitles/transcript separately; do not infer spoken accuracy from page text alone.',severity:'Medium',fix:'SME Verification',priority:'Medium',evidence:t.slice(0,800)});
+   }
+ }
+ // Content gap heuristics across accessible sources
+ const corpus=S.sources.filter(s=>s.fetched).map(s=>s.text).join('\\n').toLowerCase();
+ const tests=[
+ ['Prerequisites / foundational concepts',['prerequisite','before you','fundamental'],'Prerequisite/foundation language was not detected.','Add prerequisites where learners need prior knowledge.','Should Add'],
+ ['Limitations / edge cases',['limitation','edge case','trade-off','when not to','caveat'],'Limitations or edge-case language was not detected.','Add relevant limitations, failure modes, trade-offs, or when-not-to-use guidance.','Should Add'],
+ ['Practical examples / use cases',['example','use case','demo','scenario'],'Practical example/use-case language was not detected.','Add a concrete example or use case when it supports the learning objective.','Should Add'],
+ ['Security / privacy',['security','privacy','authentication','authorization'],'Security/privacy language was not detected.','Add security considerations when relevant to APIs, credentials, data, deployment, or sensitive information.','Nice to Have']
+ ];
+ for(const [c,terms,why,rec,p] of tests)if(S.sources.some(x=>x.fetched)&&!terms.some(x=>corpus.includes(x)))S.gaps.push({concept:c,why,rec,priority:p});
+ // Cross source title / terminology
+ const fetched=S.sources.filter(x=>x.fetched);
+ for(let i=0;i<fetched.length;i++)for(let j=i+1;j<fetched.length;j++){
+   const a=fetched[i],b=fetched[j];
+   const aw=new Set((a.text.toLowerCase().match(/[a-z][a-z0-9_-]{4,}/g)||[])),bw=new Set((b.text.toLowerCase().match(/[a-z][a-z0-9_-]{4,}/g)||[]));
+   const common=[...aw].filter(x=>bw.has(x)).slice(0,12);
+   S.cross.push({a:a.url,b:b.url,evidence:common.length?`Shared terms: ${common.join(', ')}`:'No substantial shared vocabulary detected by the simple lexical check.',impact:'Differences must be reviewed in context; lexical overlap alone does not prove consistency or inconsistency.',resolution:'Compare terminology, examples, technical claims, labels, and learner instructions across the linked assets.'});
+ }
+}
+function render(){
+ const c={files:S.sources.length,ok:S.sources.filter(x=>x.fetched).length,critical:S.issues.filter(x=>x.severity==='Critical').length,high:S.issues.filter(x=>x.severity==='High').length,medium:S.issues.filter(x=>x.severity==='Medium').length,low:S.issues.filter(x=>x.severity==='Low').length};
+ $('stats').innerHTML=[['URLs',c.files],['Accessible',c.ok],['Critical',c.critical],['High',c.high],['Medium',c.medium],['Low',c.low]].map(x=>`<div class="stat"><b>${x[1]}</b><span>${x[0]}</span></div>`).join('');
+ $('summary').innerHTML=`<div class="notice ${c.ok===c.files?'ok':'warn'}"><b>Audit boundary:</b> ${c.ok}/${c.files} URLs returned accessible page content. The report distinguishes fetched evidence from items that require Open edX/SME verification.</div>`;
+ $('key').innerHTML=S.issues.length?S.issues.slice(0,10).map(x=>`<div class="notice">${badge(x.severity)} <b>${esc(x.type)}</b> — ${esc(x.finding)}<br><span class="muted">${esc(x.source)}</span></div>`).join(''):'<div class="empty">No findings.</div>';
+ $('fixes').innerHTML=S.issues.filter(x=>x.severity==='Critical'||x.severity==='High'||x.fix==='Quick Fix').slice(0,15).map(x=>`<div class="notice"><b>${esc(x.fix)}</b> · ${badge(x.severity)}<br>${esc(x.correction)}</div>`).join('')||'<div class="empty">No fixes yet.</div>';
+ $('sourceTable').innerHTML=S.sources.length?`<div class="table"><table><tr><th>URL</th><th>Type</th><th>Status</th><th>HTTP</th><th>Title</th><th>Readable Text</th></tr>${S.sources.map(s=>`<tr><td class="url">${esc(s.url)}</td><td>${esc(s.kind)}</td><td>${esc(s.status)}</td><td>${esc(s.http||'—')}</td><td>${esc(s.title||'—')}</td><td>${s.fetched?s.text.length+' chars':'—'}</td></tr>`).join('')}</table></div>`:'<div class="empty">No URLs inspected.</div>';
+ $('coverageTable').innerHTML=S.sources.length?`<div class="table"><table><tr><th>Source</th><th>Fetch</th><th>Text</th><th>Code</th><th>Video/Transcript</th><th>Verification Boundary</th></tr>${S.sources.map(s=>`<tr><td class="url">${esc(s.url)}</td><td>${s.fetched?'Available':'Not verified'}</td><td>${s.text.length?'Extracted':'Not available'}</td><td>${s.html&&/<pre|<code/i.test(s.html)?'Detected':'Not detected'}</td><td>${/video|transcript|subtitle|caption/i.test(s.text)?'Detected':'Not detected'}</td><td>${s.fetched?'Page text can be audited; visual/audio correctness is not claimed.':'Requires Open edX/SME verification.'}</td></tr>`).join('')}</table></div>`:'<div class="empty">No sources.</div>';
+ $('issueTable').innerHTML=table(S.issues);$('masterTable').innerHTML=table(S.issues);
+ $('gapTable').innerHTML=S.gaps.length?`<div class="table"><table><tr><th>Missing Concept</th><th>Why It Matters</th><th>Recommended Addition</th><th>Priority</th></tr>${S.gaps.map(g=>`<tr><td><b>${esc(g.concept)}</b></td><td>${esc(g.why)}</td><td>${esc(g.rec)}</td><td>${esc(g.priority)}</td></tr>`).join('')}</table></div>`:'<div class="empty">No automated gap candidates.</div>';
+ $('crossTable').innerHTML=S.cross.length?`<div class="table"><table><tr><th>Source 1</th><th>Source 2</th><th>Evidence</th><th>Impact</th><th>Resolution</th></tr>${S.cross.map(x=>`<tr><td class="url">${esc(x.a)}</td><td class="url">${esc(x.b)}</td><td>${esc(x.evidence)}</td><td>${esc(x.impact)}</td><td>${esc(x.resolution)}</td></tr>`).join('')}</table></div>`:'<div class="empty">No cross-source evidence.</div>';
+}
+function table(a){if(!a.length)return '<div class="empty">No issues yet.</div>';return `<div class="table"><table><tr><th>#</th><th>Timestamp / Location</th><th>Source</th><th>Issue Type</th><th>Description / Finding</th><th>Suggestion / Correction</th><th>Severity</th><th>Fix Type</th><th>Priority</th></tr>${a.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.time||'—')}</td><td class="url">${esc(x.source)}</td><td>${esc(x.type)}</td><td>${esc(x.finding)}${x.evidence?`<pre>${esc(x.evidence)}</pre>`:''}</td><td>${esc(x.correction)}</td><td>${badge(x.severity)}</td><td>${esc(x.fix)}</td><td>${esc(x.priority)}</td></tr>`).join('')}</table></div>`}
+
+$('add').onclick=()=>{
+ const f=$('mFinding').value.trim();if(!f){alert('Enter the issue description.');return}
+ add({source:$('mSource').value||'Manual SME Review',time:$('mTime').value||'—',type:$('mType').value,severity:$('mSev').value,fix:$('mFix').value,priority:$('mPri').value,finding:f,correction:$('mCorrection').value||'—',evidence:$('mEvidence').value||''});
+ ['mSource','mTime','mFinding','mCorrection','mEvidence'].forEach(x=>$(x).value='');render();
+ document.querySelector('[data-tab="master"]').click();
+};
+
+function download(name,data,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500)}
+$('jsonBtn').onclick=()=>download('openedx-audit-report.json',JSON.stringify({generatedAt:new Date().toISOString(),sources:S.sources.map(x=>({...x,html:undefined})),issues:S.issues,gaps:S.gaps,cross:S.cross},null,2),'application/json');
+$('csvBtn').onclick=()=>{const q=v=>`"${String(v??'').replaceAll('"','""')}"`;const h=['#','Location','Source','Issue Type','Finding','Suggestion','Severity','Fix Type','Priority'];const rows=S.issues.map((x,i)=>[i+1,x.time,x.source,x.type,x.finding,x.correction,x.severity,x.fix,x.priority].map(q).join(','));download('openedx-master-issue-log.csv',[h.map(q).join(','),...rows].join('\\n'),'text/csv')};
+render();
+</script>
+</body>
+</html>
