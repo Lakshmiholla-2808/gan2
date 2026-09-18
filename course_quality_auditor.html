@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Course Quality Auditor</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:#f5f7fb;color:#172033}
+header{background:#18243a;color:white;padding:20px 28px;display:flex;justify-content:space-between;align-items:center}
+header h1{margin:0;font-size:22px} header span{font-size:12px;opacity:.8}
+main{max-width:1400px;margin:24px auto;padding:0 20px}
+.grid{display:grid;grid-template-columns:290px 1fr;gap:18px}
+.card{background:white;border:1px solid #dde3ee;border-radius:12px;padding:18px;box-shadow:0 2px 8px #1720330b}
+.drop{border:2px dashed #aeb9cc;border-radius:10px;padding:28px;text-align:center;cursor:pointer;background:#fafbfe}
+.drop.drag{border-color:#4969a8;background:#f0f4ff}
+button{border:0;border-radius:8px;padding:9px 13px;cursor:pointer;background:#243a63;color:white;font-weight:600}
+button.secondary{background:#edf1f7;color:#25334d} button.danger{background:#b33a45}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+.tabs{display:flex;gap:4px;border-bottom:1px solid #dde3ee;margin-bottom:16px}
+.tab{background:transparent;color:#59667e;border-radius:8px 8px 0 0}.tab.active{background:#edf2fb;color:#1d396d}
+.panel{display:none}.panel.active{display:block}
+h2{font-size:17px;margin:4px 0 14px}h3{font-size:14px;margin:18px 0 8px}
+table{width:100%;border-collapse:collapse;font-size:12px}th,td{border-bottom:1px solid #e4e8ef;padding:9px;text-align:left;vertical-align:top}th{background:#f7f9fc}
+input,select,textarea{width:100%;padding:8px;border:1px solid #cfd7e5;border-radius:7px;background:white;font:inherit;font-size:12px}
+textarea{min-height:75px;resize:vertical}
+.badge{display:inline-block;padding:3px 7px;border-radius:999px;background:#eef2f7;font-size:11px}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}.kpi{padding:13px;border:1px solid #e0e5ed;border-radius:9px;background:#fafbfc}.kpi b{display:block;font-size:20px;margin-top:4px}
+.small{font-size:11px;color:#66738a}.muted{color:#6b778d}
+.file-row{display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid #edf0f5}
+.issue-row textarea{min-height:55px}
+footer{color:#738096;font-size:11px;text-align:center;padding:24px}
+@media(max-width:900px){.grid{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<header><h1>Course Quality Auditor</h1><span>Client-side MVP • no API required</span></header>
+<main>
+<div class="grid">
+<aside class="card">
+  <h2>1. Upload evidence</h2>
+  <div id="drop" class="drop">Drop files here<br><span class="small">SRT, TXT, PDF, DOCX, XLSX/CSV, MP4, ZIP/TAR</span><input id="files" type="file" multiple hidden></div>
+  <div class="actions"><button id="pick">Add files</button><button id="startAnalysis">▶ Start Analysis</button><button class="secondary" id="clear">Clear</button></div>
+  <div id="fileList"></div>
+  <h3>Coverage</h3>
+  <div id="coverage" class="small">No files uploaded.</div><div id="analysisStatus" class="small" style="margin-top:12px"></div>
+</aside>
+
+<section class="card">
+<div class="tabs">
+ <button class="tab active" data-tab="overview">Overview</button>
+ <button class="tab" data-tab="transcript">Transcript</button>
+ <button class="tab" data-tab="issues">Issue Log</button>
+ <button class="tab" data-tab="prompt">Audit Prompt</button>
+</div>
+
+<div id="overview" class="panel active">
+<h2>Audit dashboard</h2>
+<div class="kpis">
+ <div class="kpi">Files<b id="kFiles">0</b></div>
+ <div class="kpi">SRT/TXT<b id="kText">0</b></div>
+ <div class="kpi">Video<b id="kVideo">0</b></div>
+ <div class="kpi">Visual/docs<b id="kDocs">0</b></div>
+ <div class="kpi">Issues<b id="kIssues">0</b></div>
+</div>
+<h3>Overall assessment</h3>
+<table><tbody>
+<tr><td>Technical Accuracy</td><td><select id="a1"><option>Strong</option><option>Moderate</option><option>Needs Improvement</option></select></td></tr>
+<tr><td>Technical Completeness</td><td><select id="a2"><option>Strong</option><option>Moderate</option><option>Needs Improvement</option></select></td></tr>
+<tr><td>Terminology</td><td><select id="a3"><option>Strong</option><option>Moderate</option><option>Needs Improvement</option></select></td></tr>
+<tr><td>Content Freshness</td><td><select id="a4"><option>Current</option><option>Some Updates Needed</option><option>Outdated Areas</option></select></td></tr>
+<tr><td>Learner Clarity</td><td><select id="a5"><option>Strong</option><option>Moderate</option><option>Needs Improvement</option></select></td></tr>
+<tr><td>Overall Quality</td><td><select id="a6"><option>Strong</option><option>Moderate</option><option>Needs Improvement</option></select></td></tr>
+</tbody></table>
+<div class="actions"><button id="exportJson">Export JSON</button><button class="secondary" id="exportCsv">Export Issue CSV</button></div>
+</div>
+
+<div id="transcript" class="panel">
+<h2>Transcript / timestamp review</h2>
+<p class="small">SRT files are parsed locally. The app does not claim to verify visual/audio content unless those files are available.</p>
+<table id="srtTable"><thead><tr><th>Timestamp</th><th>Text</th><th>Flag / note</th></tr></thead><tbody></tbody></table>
+</div>
+
+<div id="issues" class="panel">
+<h2>Master issue log</h2>
+<div class="actions"><button id="addIssue">+ Add issue</button></div>
+<table id="issueTable"><thead><tr><th>#</th><th>Timestamp/File</th><th>Issue Type</th><th>Finding</th><th>Correction / Recommendation</th><th>Severity</th><th>Fix Type</th><th>Priority</th><th></th></tr></thead><tbody></tbody></table>
+</div>
+
+<div id="prompt" class="panel">
+<h2>Audit prompt</h2>
+<p class="small">Use this when a separate AI review step is available. It mirrors the uploaded audit specification and keeps the analysis evidence-based.</p>
+<textarea id="auditPrompt" style="min-height:360px"></textarea>
+<div class="actions"><button id="copyPrompt">Copy prompt</button></div>
+</div>
+</section>
+</div>
+<footer>All uploaded data is processed in this browser session. Nothing is uploaded by this page.</footer>
+</main>
+
+<script>
+const state={files:[],issues:[],srt:[]};
+const auditPrompt=`Act as a Senior Technical Content Reviewer, SME, Learning Experience Specialist, and Course Quality Auditor.
+Analyze ONLY the uploaded evidence. Do not invent information. Treat multiple files as complementary evidence and perform cross-file consistency checks.
+
+Audit:
+1. Technical errors and inaccuracies
+2. Technical terminology
+3. Missing concepts/content gaps
+4. Outdated technology/practices
+5. Incorrect code/commands/examples
+6. Spelling/grammar
+7. Conceptual inconsistencies
+8. Learner-impact risks
+9. Recommended corrections
+
+For SRT, preserve the smallest relevant timestamp range.
+Classify findings as Incorrect, Misleading, Incomplete, Outdated, or Needs Verification.
+Use severity Critical/High/Medium/Low.
+Classify fixes as Quick Fix, Content Update, Re-record Required, or SME Verification.
+Distinguish errors from valid alternative approaches and stylistic preferences.
+
+Final output:
+- Overall Assessment table
+- 5–10 Key Findings
+- Critical Fixes
+- Major Content Gaps
+- Quick Wins
+- Re-recording Required
+- Consolidated Master Issue Log with columns:
+# | Timestamp/File | Issue Type | Finding | Correction/Recommendation | Severity | Fix Type | Priority
+
+If visual/audio/code execution cannot be independently verified, explicitly say so and use Needs Verification rather than claiming verification.`;
+
+document.getElementById('auditPrompt').value=auditPrompt;
+const $=id=>document.getElementById(id);
+$('pick').onclick=()=>$('files').click();
+$('files').onchange=e=>addFiles([...e.target.files]);
+$('drop').onclick=()=>$('files').click();
+$('drop').ondragover=e=>{e.preventDefault();$('drop').classList.add('drag')};
+$('drop').ondragleave=()=>$('drop').classList.remove('drag');
+$('drop').ondrop=e=>{e.preventDefault();$('drop').classList.remove('drag');addFiles([...e.dataTransfer.files])};
+$('clear').onclick=()=>{state.files=[];state.srt=[];state.issues=[];render()};
+function addFiles(fs){state.files.push(...fs);fs.forEach(f=>{if(/\.srt$/i.test(f.name)) parseSrt(f)});render()}
+function parseSrt(file){const r=new FileReader();r.onload=()=>{const blocks=r.result.replace(/\r/g,'').split(/\n\s*\n/);state.srt.push(...blocks.map(b=>{let l=b.split('\n');let ti=l.find(x=>x.includes('-->'))||'';let text=l.slice(l.indexOf(ti)+1).join(' ');return {file:file.name,time:ti,text,flag:''}}).filter(x=>x.time));render()};r.readAsText(file)}
+
+$('startAnalysis').onclick=async ()=>{
+  if(!state.files.length){
+    $('analysisStatus').textContent='Please upload at least one file before starting the analysis.';
+    return;
+  }
+  $('analysisStatus').textContent='Analysis started… inventorying files and preparing evidence.';
+  const textFiles=state.files.filter(f=>/\.(srt|txt)$/i.test(f.name));
+  const videos=state.files.filter(f=>/\.mp4$/i.test(f.name));
+  const docs=state.files.filter(f=>/\.(pdf|docx|xlsx|xls|csv|zip|tar|gz)$/i.test(f.name));
+  // This MVP performs local evidence preparation only; it does not claim AI/visual verification.
+  if(textFiles.length){
+    const firstSrt=state.srt.length;
+    state.issues.push({
+      loc:'File inventory',
+      type:'Enhancement',
+      finding:`Evidence inventory prepared: ${state.files.length} file(s), ${textFiles.length} transcript/text file(s), ${videos.length} video file(s), and ${docs.length} document/package file(s).`,
+      rec:'Proceed to detailed technical, terminology, gap, freshness, and learner-impact review using the uploaded evidence.',
+      severity:'Low',
+      fix:'Quick Fix',
+      priority:'Nice to Have'
+    });
+    $('analysisStatus').textContent=`Analysis preparation complete. ${firstSrt ? firstSrt+' SRT timestamp blocks parsed locally.' : 'No SRT timestamp blocks were found.'} Open Issue Log for the prepared finding.`;
+  }else{
+    state.issues.push({
+      loc:'File inventory',
+      type:'Needs Verification',
+      finding:'No SRT/TXT transcript was available for transcript-level analysis.',
+      rec:'Provide transcript/subtitles or another text-based source for evidence-based timestamp analysis.',
+      severity:'Medium',
+      fix:'SME Verification',
+      priority:'Should Add'
+    });
+    $('analysisStatus').textContent='Analysis preparation complete. Transcript-level verification requires SRT/TXT evidence.';
+  }
+  render();
+};
+function render(){
+ $('fileList').innerHTML=state.files.map((f,i)=>`<div class="file-row"><span>${esc(f.name)}<br><span class="small">${f.type||'unknown'} • ${fmt(f.size)}</span></span><span class="badge">${ext(f.name)}</span></div>`).join('')||'<span class="muted">No files</span>';
+ const n=state.files.length, text=state.files.filter(f=>/\.(srt|txt)$/i.test(f.name)).length, video=state.files.filter(f=>/\.mp4$/i.test(f.name)).length, docs=state.files.filter(f=>/\.(pdf|docx|xlsx|xls|csv|zip|tar|gz)$/i.test(f.name)).length;
+ $('kFiles').textContent=n;$('kText').textContent=text;$('kVideo').textContent=video;$('kDocs').textContent=docs;$('kIssues').textContent=state.issues.length;
+ $('coverage').innerHTML=`Transcript/text: <b>${text?'Available':'Not available'}</b><br>Video: <b>${video?'Available':'Not available'}</b><br>Docs/packages: <b>${docs?'Available':'Not available'}</b><br><br>${video?'Visual/video evidence can be reviewed only when accessible to the audit step.':'Visual demonstrations, pronunciation, on-screen text, and video-only content cannot be independently verified from the current uploads.'}`;
+ $('srtTable').querySelector('tbody').innerHTML=state.srt.map((x,i)=>`<tr><td>${esc(x.time)}<br><span class="small">${esc(x.file)}</span></td><td>${esc(x.text)}</td><td><input data-srt="${i}" placeholder="Reviewer note"></td></tr>`).join('')||'<tr><td colspan="3">No SRT uploaded.</td></tr>';
+ renderIssues();
+}
+function renderIssues(){
+ $('issueTable').querySelector('tbody').innerHTML=state.issues.map((x,i)=>`<tr>
+<td>${i+1}</td><td><input data-k="loc" data-i="${i}" value="${esc(x.loc)}"></td>
+<td><select data-k="type" data-i="${i}">${['Technical Error','Technical Inaccuracy','Technical Gap','Terminology','Outdated Content','Code/Command Issue','Spelling','Grammar','Inconsistency','Learner Risk','Enhancement','Needs Verification'].map(v=>`<option ${v===x.type?'selected':''}>${v}</option>`).join('')}</select></td>
+<td><textarea data-k="finding" data-i="${i}">${esc(x.finding)}</textarea></td>
+<td><textarea data-k="rec" data-i="${i}">${esc(x.rec)}</textarea></td>
+<td><select data-k="severity" data-i="${i}">${['Critical','High','Medium','Low'].map(v=>`<option ${v===x.severity?'selected':''}>${v}</option>`).join('')}</select></td>
+<td><select data-k="fix" data-i="${i}">${['Quick Fix','Content Update','Re-record Required','SME Verification'].map(v=>`<option ${v===x.fix?'selected':''}>${v}</option>`).join('')}</select></td>
+<td><select data-k="priority" data-i="${i}">${['Must Add','Should Add','Nice to Have'].map(v=>`<option ${v===x.priority?'selected':''}>${v}</option>`).join('')}</select></td>
+<td><button class="danger" onclick="delIssue(${i})">×</button></td></tr>`).join('');
+ document.querySelectorAll('#issueTable [data-k]').forEach(el=>el.oninput=()=>{state.issues[+el.dataset.i][el.dataset.k]=el.value;renderKpi()});
+}
+function renderKpi(){$('kIssues').textContent=state.issues.length}
+function delIssue(i){state.issues.splice(i,1);render()}
+$('addIssue').onclick=()=>{state.issues.push({loc:'',type:'Technical Error',finding:'',rec:'',severity:'Medium',fix:'Quick Fix',priority:'Should Add'});render()};
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));b.classList.add('active');$(b.dataset.tab).classList.add('active')});
+$('copyPrompt').onclick=()=>navigator.clipboard.writeText(auditPrompt);
+$('exportJson').onclick=()=>download('course-audit.json',JSON.stringify({files:state.files.map(f=>({name:f.name,size:f.size,type:f.type})),assessment:{a1:$('a1').value,a2:$('a2').value,a3:$('a3').value,a4:$('a4').value,a5:$('a5').value,a6:$('a6').value},issues:state.issues},null,2),'application/json');
+$('exportCsv').onclick=()=>{let rows=[['#','Timestamp/File','Issue Type','Finding','Correction/Recommendation','Severity','Fix Type','Priority'],...state.issues.map((x,i)=>[i+1,x.loc,x.type,x.finding,x.rec,x.severity,x.fix,x.priority])];download('master-issue-log.csv',rows.map(r=>r.map(csv).join(',')).join('\n'),'text/csv')};
+function download(name,data,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500)}
+function csv(s){return `"${String(s??'').replaceAll('"','""')}"`}
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function ext(n){return (n.split('.').pop()||'').toUpperCase()}
+function fmt(n){return n<1024?`${n} B`:n<1048576?`${(n/1024).toFixed(1)} KB`:`${(n/1048576).toFixed(1)} MB`}
+render();
+</script>
+</body>
+</html>
